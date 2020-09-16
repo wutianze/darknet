@@ -533,7 +533,7 @@ void train_prog(char *cfg, char *weight, char *acfg, char *aweight, int clear, i
     data train, buffer;
 
 
-    list *plist = get_paths(train_images);
+    list_d *plist = get_paths(train_images);
     char **paths = (char **)list_to_array(plist);
 
     load_args args= get_base_args(anet);
@@ -696,7 +696,7 @@ void train_dcgan(char *cfg, char *weight, char *acfg, char *aweight, int clear, 
     data train, buffer;
 
 
-    list *plist = get_paths(train_images);
+    list_d *plist = get_paths(train_images);
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
@@ -892,7 +892,7 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
     data train, buffer;
 
 
-    list *plist = get_paths(train_images);
+    list_d *plist = get_paths(train_images);
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 

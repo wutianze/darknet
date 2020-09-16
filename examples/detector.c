@@ -1,11 +1,10 @@
 #include "darknet.h"
-
 static int coco_ids[] = {1,2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,18,19,20,21,22,23,24,25,27,28,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,67,70,72,73,74,75,76,77,78,79,80,81,82,84,85,86,87,88,89,90};
 
 
 void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear)
 {
-    list *options = read_data_cfg(datacfg);
+    list_d *options = read_data_cfg(datacfg);
     char *train_images = option_find_str(options, "train", "data/train.list");
     char *backup_directory = option_find_str(options, "backup", "/backup/");
 
@@ -38,7 +37,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
     int classes = l.classes;
     float jitter = l.jitter;
 
-    list *plist = get_paths(train_images);
+    list_d *plist = get_paths(train_images);
     //int N = plist->size;
     char **paths = (char **)list_to_array(plist);
 
@@ -234,7 +233,7 @@ void print_imagenet_detections(FILE *fp, int id, detection *dets, int total, int
 void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char *outfile)
 {
     int j;
-    list *options = read_data_cfg(datacfg);
+    list_d *options = read_data_cfg(datacfg);
     char *valid_images = option_find_str(options, "valid", "data/train.list");
     char *name_list = option_find_str(options, "names", "data/names.list");
     char *prefix = option_find_str(options, "results", "results");
@@ -248,7 +247,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
-    list *plist = get_paths(valid_images);
+    list_d *plist = get_paths(valid_images);
     char **paths = (char **)list_to_array(plist);
 
     layer l = net->layers[net->n-1];
@@ -364,7 +363,7 @@ void validate_detector_flip(char *datacfg, char *cfgfile, char *weightfile, char
 void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *outfile)
 {
     int j;
-    list *options = read_data_cfg(datacfg);
+    list_d *options = read_data_cfg(datacfg);
     char *valid_images = option_find_str(options, "valid", "data/train.list");
     char *name_list = option_find_str(options, "names", "data/names.list");
     char *prefix = option_find_str(options, "results", "results");
@@ -378,7 +377,7 @@ void validate_detector(char *datacfg, char *cfgfile, char *weightfile, char *out
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
-    list *plist = get_paths(valid_images);
+    list_d *plist = get_paths(valid_images);
     char **paths = (char **)list_to_array(plist);
 
     layer l = net->layers[net->n-1];
@@ -493,7 +492,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     fprintf(stderr, "Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     srand(time(0));
 
-    list *plist = get_paths("data/coco_val_5k.list");
+    list_d *plist = get_paths("data/coco_val_5k.list");
     char **paths = (char **)list_to_array(plist);
 
     layer l = net->layers[net->n-1];
@@ -558,10 +557,51 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
     }
 }
 
+char** names_result;
+network* net_result;
+void init_result(const char* namefile, const char* cfgfile, const char* weightfile){
+//list_d *options = read_data_cfg(datacfg);
+//char *name_list = option_find_str(options, "names", "data/names.list");
+    names_result = get_labels(namefile);
+    net_result = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net_result, 1);
+    srand(2222222);
+}
+detection* detect_result(IplImage* iplI,int* nboxes){
+    //char *name_list = option_find_str(options, "names", "data/names.list");
+    //char **names = get_labels(name_list);
+
+    //image **alphabet = load_alphabet();
+    //double time;
+    //char buff[256];
+    //float nms=.45;
+    image im = ipl_to_image(iplI);
+    image sized = letterbox_image(im, net_result->w, net_result->h);
+    //image sized = resize_image(im, net->w, net->h);
+    //image sized2 = resize_max(im, net->w);
+    //image sized = crop_image(sized2, -((net->w - sized2.w)/2), -((net->h - sized2.h)/2), net->w, net->h);
+    //resize_network(net, sized.w, sized.h);
+    //layer l = net->layers[net->n-1];
+
+
+    float *X = sized.data;
+    //time=what_time_is_it_now();
+    network_predict(net_result, X);
+    //printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
+    detection *dets = get_network_boxes(net_result, im.w, im.h, 0.5, 0.5, 0, 1, nboxes);
+    printf("%d\n", *nboxes);
+    //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
+    //if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
+    //draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
+    //free_detections(dets, nboxes);
+    free_image(im);
+    free_image(sized);
+    return dets;
+}
 
 void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filename, float thresh, float hier_thresh, char *outfile, int fullscreen)
 {
-    list *options = read_data_cfg(datacfg);
+    list_d *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
     char **names = get_labels(name_list);
 
@@ -598,7 +638,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
         printf("%s: Predicted in %f seconds.\n", input, what_time_is_it_now()-time);
         int nboxes = 0;
         detection *dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, 0, 1, &nboxes);
-        //printf("%d\n", nboxes);
+        printf("%d\n", nboxes);
         //if (nms) do_nms_obj(boxes, probs, l.w*l.h*l.n, l.classes, nms);
         if (nms) do_nms_sort(dets, nboxes, l.classes, nms);
         draw_detections(im, dets, nboxes, thresh, names, alphabet, l.classes);
@@ -839,7 +879,7 @@ void run_detector(int argc, char **argv)
     else if(0==strcmp(argv[2], "valid2")) validate_detector_flip(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(cfg, weights);
     else if(0==strcmp(argv[2], "demo")) {
-        list *options = read_data_cfg(datacfg);
+        list_d *options = read_data_cfg(datacfg);
         int classes = option_find_int(options, "classes", 20);
         char *name_list = option_find_str(options, "names", "data/names.list");
         char **names = get_labels(name_list);

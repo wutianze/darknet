@@ -4,7 +4,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
-
+#ifdef OPENCV
+//#include <opencv2/opencv.hpp>            // C++
+#include <opencv2/highgui/highgui_c.h>   // C
+#include <opencv2/imgproc/imgproc_c.h>   // C
+//#include <opencv2/core/types_c.h>
+#endif
 #ifdef GPU
     #define BLOCK 512
 
@@ -595,15 +600,15 @@ typedef struct node{
     struct node *prev;
 } node;
 
-typedef struct list{
+typedef struct list_d{
     int size;
     node *front;
     node *back;
-} list;
+} list_d;
 
 pthread_t load_data(load_args args);
-list *read_data_cfg(char *filename);
-list *read_cfg(char *filename);
+list_d *read_data_cfg(char *filename);
+list_d *read_cfg(char *filename);
 unsigned char *read_file(char *filename);
 data resize_data(data orig, int w, int h);
 data *tile_data(data orig, int divs, int size);
@@ -623,6 +628,11 @@ void normalize_cpu(float *x, float *mean, float *variance, int batch, int filter
 void softmax(float *input, int n, float temp, int stride, float *output);
 
 int best_3d_shift_r(image a, image b, int min, int max);
+//-------for our test
+void init_result(const char*, const char*,const char*);
+	detection* detect_result(IplImage*,int*);
+//--------
+
 #ifdef GPU
 void axpy_gpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
 void fill_gpu(int N, float ALPHA, float * X, int INCX);
@@ -675,9 +685,9 @@ image *get_weights(layer l);
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int frame_skip, char *prefix, int avg, float hier_thresh, int w, int h, int fps, int fullscreen);
 void get_detection_detections(layer l, int w, int h, float thresh, detection *dets);
 
-char *option_find_str(list *l, char *key, char *def);
-int option_find_int(list *l, char *key, int def);
-int option_find_int_quiet(list *l, char *key, int def);
+char *option_find_str(list_d *l, char *key, char *def);
+int option_find_int(list_d *l, char *key, int def);
+int option_find_int_quiet(list_d *l, char *key, int def);
 
 network *parse_network_cfg(char *filename);
 void save_weights(network *net, char *filename);
@@ -693,6 +703,7 @@ void set_batch_network(network *net, int b);
 void set_temp_network(network *net, float t);
 image load_image(char *filename, int w, int h, int c);
 image load_image_color(char *filename, int w, int h);
+image ipl_to_image(IplImage* iplI);
 image make_image(int w, int h, int c);
 image resize_image(image im, int w, int h);
 void censor_image(image im, int dx, int dy, int w, int h);
@@ -764,7 +775,7 @@ void free_image(image m);
 float train_network(network *net, data d);
 pthread_t load_data_in_thread(load_args args);
 void load_data_blocking(load_args args);
-list *get_paths(char *filename);
+list_d *get_paths(char *filename);
 void hierarchy_predictions(float *predictions, int n, tree *hier, int only_leaves, int stride);
 void change_leaves(tree *t, char *leaf_list);
 
@@ -778,7 +789,7 @@ void free_ptrs(void **ptrs, int n);
 char *fgetl(FILE *fp);
 void strip(char *s);
 float sec(clock_t clocks);
-void **list_to_array(list *l);
+void **list_to_array(list_d *l);
 void top_k(float *a, int n, int k, int *index);
 int *read_map(char *filename);
 void error(const char *s);
@@ -786,7 +797,7 @@ int max_index(float *a, int n);
 int max_int_index(int *a, int n);
 int sample_array(float *a, int n);
 int *random_index_order(int min, int max);
-void free_list(list *l);
+void free_list(list_d *l);
 float mse_array(float *a, int n);
 float variance_array(float *a, int n);
 float mag_array(float *a, int n);
