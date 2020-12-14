@@ -21,7 +21,7 @@
     #include "cudnn.h"
     #endif
 #endif
-
+//#define __cplusplus if you need to use this in C++ project
 #ifdef __cplusplus
 extern "C" {
 #endif
